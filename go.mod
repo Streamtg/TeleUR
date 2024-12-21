@@ -1,4 +1,4 @@
-module TeleURLUploader
+module github.com/asdfzxcvbn/TeleURLUploader
 
 go 1.23.4
 

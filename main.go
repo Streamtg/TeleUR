@@ -1,7 +1,6 @@
 package main
 
 import (
-	"TeleURLUploader/progress"
 	"errors"
 	"io"
 	"log"
@@ -9,6 +8,8 @@ import (
 	"net/url"
 	"slices"
 	"strings"
+
+	"github.com/asdfzxcvbn/TeleURLUploader/progress"
 
 	"github.com/celestix/gotgproto"
 	"github.com/celestix/gotgproto/dispatcher/handlers"
