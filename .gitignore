@@ -1,0 +1,5 @@
+*.session
+
+/TeleURLUploader
+/TeleURLUploader-*
+/.env
