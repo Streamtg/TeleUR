@@ -24,7 +24,7 @@ Usage of ./TeleURLUploader:
 there's a `.env.sample` file you can fill out. the only key that might require explanation is `AUTHORIZED`, it's a comma-seperated list of user ids that will be able to use the bot. you can also make `SESSION_PATH` a full path in case you'll be moving the binary around.
 
 # usage
-after starting the bot, just send an http url to download:
+after starting the bot, just send an http url to download. you can also use the syntax `<link> <filename>` to upload the file with a custom filename. example: `https://atl.speedtest.clouvider.net/1g.bin 1gigabyte.bin`
 
 ![normal download](/imgs/normal-download.png)
 ![normal upload](/imgs/normal-upload.png)
