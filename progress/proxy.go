@@ -11,18 +11,19 @@ import (
 )
 
 type Proxy struct {
+	lastUpdate time.Time
+	startTime  time.Time
+
 	ctx    *ext.Context
 	update *ext.Update
 	sent   *types.Message
 
+	rw *os.File
+
+	sizeStr   string
 	upCurrent float64
 	current   float64
 	size      float64
-	sizeStr   string
-
-	rw         *os.File
-	lastUpdate time.Time
-	startTime  time.Time
 }
 
 func NewProxy(ctx *ext.Context, update *ext.Update, sent *types.Message, size float64) (*Proxy, error) {
