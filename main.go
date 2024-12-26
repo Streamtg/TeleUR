@@ -77,6 +77,8 @@ func receivedMsg(ctx *ext.Context, update *ext.Update) error {
 	}
 	defer resp.Body.Close()
 
+	icon, iconErr := GetMessageReplyMedia(ctx, update.EffectiveMessage)
+
 	proxy, err := progress.NewProxy(ctx, update, sent, float64(resp.ContentLength))
 	if err != nil {
 		ctx.EditMessage(chatID, &tg.MessagesEditMessageRequest{
@@ -130,6 +132,19 @@ func receivedMsg(ctx *ext.Context, update *ext.Update) error {
 		return errors.New("error while making uploader: " + err.Error())
 	}
 
+	uploadedDoc := &tg.InputMediaUploadedDocument{
+		File: uploaded,
+		Attributes: []tg.DocumentAttributeClass{
+			&tg.DocumentAttributeFilename{
+				FileName: filename,
+			},
+		},
+	}
+	if iconErr == nil {
+		uploadedDoc.Thumb = icon
+		uploadedDoc.Flags = 0x4 // https://github.com/wiz0u/WTelegramClient/blob/2451068a71444997fb98171e99a9cdd4f7007c7c/src/TL.Schema.cs#L257
+	}
+
 	_, err = ctx.SendMedia(chatID, &tg.MessagesSendMediaRequest{
 		ReplyTo: &tg.InputReplyToMessage{
 			ReplyToMsgID: update.EffectiveMessage.ID,
@@ -137,14 +152,7 @@ func receivedMsg(ctx *ext.Context, update *ext.Update) error {
 				UserID: update.EffectiveUser().GetID(),
 			},
 		},
-		Media: &tg.InputMediaUploadedDocument{
-			File: uploaded,
-			Attributes: []tg.DocumentAttributeClass{
-				&tg.DocumentAttributeFilename{
-					FileName: filename,
-				},
-			},
-		},
+		Media: uploadedDoc,
 	})
 	if err != nil {
 		return errors.New("error while sending media: " + err.Error())
