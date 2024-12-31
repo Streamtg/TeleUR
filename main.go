@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"io"
 	"log"
@@ -10,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/asdfzxcvbn/TeleURLUploader/progress"
+	"github.com/google/uuid"
 
 	"github.com/celestix/gotgproto"
 	"github.com/celestix/gotgproto/dispatcher/handlers"
@@ -21,7 +23,11 @@ import (
 	"github.com/gotd/td/tg"
 )
 
+var ctxManager map[string]context.CancelFunc
+
 func main() {
+	ctxManager = make(map[string]context.CancelFunc)
+
 	client, err := gotgproto.NewClient(
 		ApiID,
 		ApiHash,
@@ -35,6 +41,7 @@ func main() {
 	}
 
 	client.Dispatcher.AddHandler(handlers.NewMessage(filters.Message.Text, receivedMsg))
+	client.Dispatcher.AddHandler(handlers.NewCallbackQuery(filters.CallbackQuery.Prefix("cancel-"), cancelHandler))
 
 	log.Println("starting!")
 	client.Idle()
@@ -78,8 +85,13 @@ func receivedMsg(ctx *ext.Context, update *ext.Update) error {
 	defer resp.Body.Close()
 
 	icon, iconErr := GetMessageReplyMedia(ctx, update.EffectiveMessage)
+	dlCtx, dlCancel := context.WithCancel(context.Background())
 
-	proxy, err := progress.NewProxy(ctx, update, sent, float64(resp.ContentLength))
+	uid := uuid.NewString()
+	ctxManager[uid] = dlCancel
+	defer delete(ctxManager, uid)
+
+	proxy, err := progress.NewProxy(ctx, update, sent, float64(resp.ContentLength), dlCtx, uid)
 	if err != nil {
 		ctx.EditMessage(chatID, &tg.MessagesEditMessageRequest{
 			ID:      sent.ID,
@@ -93,6 +105,12 @@ func receivedMsg(ctx *ext.Context, update *ext.Update) error {
 		if _, err := io.CopyN(proxy, resp.Body, progress.MB); err != nil {
 			if errors.Is(err, io.EOF) { // done downloading
 				break
+			} else if errors.Is(err, context.Canceled) {
+				ctx.EditMessage(chatID, &tg.MessagesEditMessageRequest{
+					ID:      sent.ID,
+					Message: "cancelled",
+				})
+				return nil
 			}
 
 			ctx.EditMessage(chatID, &tg.MessagesEditMessageRequest{
@@ -125,6 +143,14 @@ func receivedMsg(ctx *ext.Context, update *ext.Update) error {
 
 	uploaded, err := uploader.NewUploader(ctx.Raw).WithPartSize(524288).FromReader(ctx, filename, proxy)
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			ctx.EditMessage(chatID, &tg.MessagesEditMessageRequest{
+				ID:      sent.ID,
+				Message: "cancelled",
+			})
+			return nil
+		}
+
 		ctx.EditMessage(chatID, &tg.MessagesEditMessageRequest{
 			ID:      sent.ID,
 			Message: "error while uploading: " + err.Error(),
@@ -160,5 +186,17 @@ func receivedMsg(ctx *ext.Context, update *ext.Update) error {
 
 	ctx.DeleteMessages(chatID, []int{sent.ID})
 
+	return nil
+}
+
+func cancelHandler(ctx *ext.Context, update *ext.Update) error {
+	uid := string(update.CallbackQuery.Data[7:])
+
+	cancel, ok := ctxManager[uid]
+	if !ok {
+		return errors.New("couldn't find id " + uid)
+	}
+
+	cancel()
 	return nil
 }

@@ -11,6 +11,10 @@ import (
 // Write proxies calls to the underlying file's Write method used in the downloading stage.
 // it will check the time on every call and edit the message with progress as necessary.
 func (px *Proxy) Write(p []byte) (n int, err error) {
+	if err = px.pxCtx.Err(); err != nil {
+		return
+	}
+
 	n, err = px.rw.Write(p)
 	if err != nil {
 		return
@@ -36,6 +40,18 @@ func (px *Proxy) Write(p []byte) (n int, err error) {
 		px.ctx.EditMessage(px.update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
 			ID:      px.sent.ID,
 			Message: b.String(),
+			ReplyMarkup: &tg.ReplyInlineMarkup{
+				Rows: []tg.KeyboardButtonRow{
+					{
+						Buttons: []tg.KeyboardButtonClass{
+							&tg.KeyboardButtonCallback{
+								Text: "cancel",
+								Data: []byte("cancel-" + px.pxUid),
+							},
+						},
+					},
+				},
+			},
 		})
 		px.lastUpdate = rn
 	}

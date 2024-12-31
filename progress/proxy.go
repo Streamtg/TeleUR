@@ -1,6 +1,7 @@
 package progress
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -18,6 +19,9 @@ type Proxy struct {
 	update *ext.Update
 	sent   *types.Message
 
+	pxCtx context.Context
+	pxUid string
+
 	rw *os.File
 
 	sizeStr   string
@@ -26,7 +30,7 @@ type Proxy struct {
 	size      float64
 }
 
-func NewProxy(ctx *ext.Context, update *ext.Update, sent *types.Message, size float64) (*Proxy, error) {
+func NewProxy(ctx *ext.Context, update *ext.Update, sent *types.Message, size float64, pxCtx context.Context, pxUid string) (*Proxy, error) {
 	tmpfile, err := os.CreateTemp(os.TempDir(), "urluploaded")
 	if err != nil {
 		return nil, err
@@ -40,6 +44,8 @@ func NewProxy(ctx *ext.Context, update *ext.Update, sent *types.Message, size fl
 	rn := time.Now()
 	return &Proxy{
 		ctx:        ctx,
+		pxCtx:      pxCtx,
+		pxUid:      pxUid,
 		update:     update,
 		sent:       sent,
 		size:       size,

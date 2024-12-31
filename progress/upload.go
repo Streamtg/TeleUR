@@ -11,6 +11,10 @@ import (
 // Read proxies calls to the underlying file's Read method used in the uploading stage.
 // it will check the time on every call and edit the message with progress as necessary.
 func (px *Proxy) Read(p []byte) (n int, err error) {
+	if err = px.pxCtx.Err(); err != nil {
+		return
+	}
+
 	n, err = px.rw.Read(p)
 	if err != nil {
 		return
@@ -30,6 +34,18 @@ func (px *Proxy) Read(p []byte) (n int, err error) {
 		px.ctx.EditMessage(px.update.EffectiveChat().GetID(), &tg.MessagesEditMessageRequest{
 			ID:      px.sent.ID,
 			Message: b.String(),
+			ReplyMarkup: &tg.ReplyInlineMarkup{
+				Rows: []tg.KeyboardButtonRow{
+					{
+						Buttons: []tg.KeyboardButtonClass{
+							&tg.KeyboardButtonCallback{
+								Text: "cancel",
+								Data: []byte("cancel-" + px.pxUid),
+							},
+						},
+					},
+				},
+			},
 		})
 		px.lastUpdate = rn
 	}
