@@ -22,6 +22,11 @@ func (px *Proxy) Write(p []byte) (n int, err error) {
 
 	px.current += float64(n)
 
+	// in case content-length wasnt reported, we still need to stop at 2gb
+	if px.current > MaxFileSize {
+		return n, ErrFileTooBig
+	}
+
 	if rn := time.Now(); px.lastUpdate.Add(ThreeSeconds).Compare(rn) == -1 && px.current != px.size {
 		b := strings.Builder{}
 		b.WriteString(fmt.Sprintf("downloading - %.2f / %sMB", px.current/FloatMB, px.sizeStr))

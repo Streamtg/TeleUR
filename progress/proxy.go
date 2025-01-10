@@ -36,6 +36,10 @@ func NewProxy(ctx *ext.Context, update *ext.Update, sent *types.Message, size fl
 		return nil, err
 	}
 
+	if size > MaxFileSize {
+		return nil, ErrFileTooBig
+	}
+
 	sizeStr := fmt.Sprintf("%.2f", size/FloatMB)
 	if sizeStr == "-0.00" {
 		sizeStr = "?"
