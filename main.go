@@ -168,7 +168,7 @@ func receivedMsg(ctx *ext.Context, update *ext.Update) error {
 	}
 	if iconErr == nil {
 		uploadedDoc.Thumb = icon
-		uploadedDoc.Flags = 0x4 // https://github.com/wiz0u/WTelegramClient/blob/2451068a71444997fb98171e99a9cdd4f7007c7c/src/TL.Schema.cs#L257
+		uploadedDoc.Flags = 1 << 2 // thumb:flags.2?InputFile
 	}
 
 	_, err = ctx.SendMedia(chatID, &tg.MessagesSendMediaRequest{
