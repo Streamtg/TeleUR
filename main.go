@@ -174,9 +174,10 @@ func receivedMsg(ctx *ext.Context, update *ext.Update) error {
 	_, err = ctx.SendMedia(chatID, &tg.MessagesSendMediaRequest{
 		ReplyTo: &tg.InputReplyToMessage{
 			ReplyToMsgID: update.EffectiveMessage.ID,
-			ReplyToPeerID: &tg.InputPeerUser{
-				UserID: update.EffectiveUser().GetID(),
-			},
+			// for some reason, text is quoted when ReplyToPeerID is specified. i don't know why i was using it in the first place since chatID is specified
+			// ReplyToPeerID: &tg.InputPeerUser{
+			// 	UserID: update.EffectiveUser().GetID(),
+			// },
 		},
 		Media: uploadedDoc,
 	})
@@ -184,9 +185,7 @@ func receivedMsg(ctx *ext.Context, update *ext.Update) error {
 		return errors.New("error while sending media: " + err.Error())
 	}
 
-	ctx.DeleteMessages(chatID, []int{sent.ID})
-
-	return nil
+	return ctx.DeleteMessages(chatID, []int{sent.ID})
 }
 
 func cancelHandler(ctx *ext.Context, update *ext.Update) error {
