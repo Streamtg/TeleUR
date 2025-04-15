@@ -3,6 +3,7 @@
 
 *.session
 
+/build/
 /TeleURLUploader
 /TeleURLUploader-*
 /.env
